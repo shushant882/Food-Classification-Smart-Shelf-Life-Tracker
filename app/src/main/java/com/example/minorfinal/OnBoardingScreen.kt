@@ -4,7 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager // <-- USES THE CORRECT IMPORT
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -53,19 +53,22 @@ fun OnBoardingScreen(
 
     val isLastPage = pagerState.currentPage == items.size - 1
 
-    fun navigateToHome() {
-        navController.navigate(Screen.Home.route) {
+    // --- HERE IS THE FIX ---
+    // This function now navigates to the Welcome screen, not the Home screen.
+    fun navigateToWelcome() {
+        navController.navigate(Screen.Welcome.route) { // <-- CHANGED THIS LINE
             popUpTo(Screen.OnBoarding.route) {
                 inclusive = true
             }
         }
     }
+    // --- END OF FIX ---
 
     OnBoardingScreenContent(
         items = items,
         pagerState = pagerState,
         isLastPage = isLastPage,
-        onSkipClicked = { navigateToHome() },
+        onSkipClicked = { navigateToWelcome() }, // <-- Use the corrected function
         onNextClicked = {
             if (!isLastPage) {
                 scope.launch {
@@ -73,7 +76,7 @@ fun OnBoardingScreen(
                 }
             }
         },
-        onGetStartedClicked = { navigateToHome() }
+        onGetStartedClicked = { navigateToWelcome() } // <-- Use the corrected function
     )
 }
 
@@ -90,6 +93,8 @@ fun OnBoardingScreenContent(
     onNextClicked: () -> Unit,
     onGetStartedClicked: () -> Unit
 ) {
+    // ... This composable is correct, no changes needed ...
+    // ... (Your Box, HorizontalPager, TextButton, and Column code) ...
     Box(modifier = Modifier.fillMaxSize()) {
 
         HorizontalPager(
@@ -115,14 +120,11 @@ fun OnBoardingScreenContent(
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // THIS IS THE LINE THAT WAS CRASHING
-            // It now uses the correctly implemented HorizontalPagerIndicator from the library
             HorizontalPagerIndicator(
                 pageCount = items.size,
                 currentPage = pagerState.currentPage,
                 modifier = Modifier.padding(top = 16.dp)
             )
-
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -157,6 +159,8 @@ fun OnBoardingScreenContent(
  */
 @Composable
 fun OnBoardingPage(item: OnBoardingItem) {
+    // ... This composable is correct, no changes needed ...
+    // ... (Your Column, Image, and Surface code) ...
     Column(modifier = Modifier.fillMaxSize()) {
 
         Image(
@@ -205,14 +209,16 @@ fun OnBoardingPage(item: OnBoardingItem) {
                 )
             }
         }
+    }
+}
 
-}}
 @Composable
 fun HorizontalPagerIndicator(
     pageCount: Int,
     currentPage: Int,
     modifier: Modifier = Modifier
 ) {
+    // ... This composable is correct, no changes needed ...
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.Center
@@ -228,6 +234,7 @@ fun HorizontalPagerIndicator(
                     .size(8.dp)
                     .clip(CircleShape)
                     .background(color)
+                    // Add horizontal padding to create space between dots
                     .padding(horizontal = 4.dp)
             )
         }
