@@ -7,6 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.minorfinal.ui.screens.ClassifierScreen
 
+//import com.example.minorfinal.ui.screens.ClassifierScreen
+
 
 /**
  * The main navigation graph for the application.

@@ -18,4 +18,12 @@ val YumQuickDarkText = Color(0xFF333333)
 val YumQuickGrayText = Color(0xFF888888)
 val YumQuickButtonText = Color(0xFF4A2B0F)
 val YumQuickLoginButton = Color(0xFFF0C14B)
+val DarkBg = Color(0xFF0A0A0F)           // Deep cyberpunk black
+val DarkCard = Color(0xFF14141A)         // Smooth dark card
+val DarkTextPrimary = Color(0xFFEAEAEA)  // Soft white
+val DarkTextSecondary = Color(0xFF9A9A9A)
+
+val NeonGreen = Color(0xFF00FF8A)        // Accent button color
+val NeonGreenDim = Color(0xFF00CC6E)
+
 val YumQuickSignupButton = Color(0xFFFDF4D8)

@@ -49,18 +49,18 @@ object OnBoardingRepository {
     fun getOnBoardingItems(): List<OnBoardingItem> {
         return listOf(
             OnBoardingItem(
-                title = "Order For Food",
-                description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                title = "Fresh And Healthy Food",
+                description = "Fuel your day, sharpen your focus, and feel your absolute best with our curated selection of clean, healthy food.",
                 imageRes = R.drawable.onboarding_image_1
             ),
             OnBoardingItem(
-                title = "Easy Payment",
-                description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                title = "AI-Powered Food Recognition",
+                description = "See beyond the plate. Our AI identifies and understands your food photos, turning any meal into useful data.",
                 imageRes = R.drawable.onboarding_image_2
             ),
             OnBoardingItem(
-                title = "Fast Delivery",
-                description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                title = "Live Weather Shelf Life Analysis",
+                description = "Stop guessing. Our AI uses your phone's live location data to fetch the real-time temperature and humidity, then predicts the true shelf life of your food.",
 
                 imageRes = R.drawable.onboarding_image_3
             )

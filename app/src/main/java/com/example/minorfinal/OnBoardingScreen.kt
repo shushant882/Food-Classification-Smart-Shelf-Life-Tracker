@@ -28,10 +28,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
-/**
- * Stateful composable for the Onboarding screen.
- * Connects to the ViewModel and handles navigation logic.
- */
+val DarkBg = Color(0xFF000000)
+val DarkCard = Color(0xFF1A1A1A)
+val AccentOrange = Color(0xFFE65100)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnBoardingScreen(
@@ -40,49 +40,50 @@ fun OnBoardingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val items = uiState.items
-
     val pagerState = rememberPagerState { items.size }
     val scope = rememberCoroutineScope()
 
     if (items.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(DarkBg),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = AccentOrange)
         }
         return
     }
 
     val isLastPage = pagerState.currentPage == items.size - 1
 
-    // --- HERE IS THE FIX ---
-    // This function now navigates to the Welcome screen, not the Home screen.
     fun navigateToWelcome() {
-        navController.navigate(Screen.Welcome.route) { // <-- CHANGED THIS LINE
-            popUpTo(Screen.OnBoarding.route) {
-                inclusive = true
-            }
+        navController.navigate(Screen.Welcome.route) {
+            popUpTo(Screen.OnBoarding.route) { inclusive = true }
         }
     }
-    // --- END OF FIX ---
 
-    OnBoardingScreenContent(
-        items = items,
-        pagerState = pagerState,
-        isLastPage = isLastPage,
-        onSkipClicked = { navigateToWelcome() }, // <-- Use the corrected function
-        onNextClicked = {
-            if (!isLastPage) {
-                scope.launch {
-                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarkBg)
+    ) {
+        OnBoardingScreenContent(
+            items = items,
+            pagerState = pagerState,
+            isLastPage = isLastPage,
+            onSkipClicked = { navigateToWelcome() },
+            onNextClicked = {
+                if (!isLastPage) {
+                    scope.launch {
+                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                    }
                 }
-            }
-        },
-        onGetStartedClicked = { navigateToWelcome() } // <-- Use the corrected function
-    )
+            },
+            onGetStartedClicked = { navigateToWelcome() }
+        )
+    }
 }
 
-/**
- * Stateless composable that draws the Onboarding UI.
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnBoardingScreenContent(
@@ -93,8 +94,6 @@ fun OnBoardingScreenContent(
     onNextClicked: () -> Unit,
     onGetStartedClicked: () -> Unit
 ) {
-    // ... This composable is correct, no changes needed ...
-    // ... (Your Box, HorizontalPager, TextButton, and Column code) ...
     Box(modifier = Modifier.fillMaxSize()) {
 
         HorizontalPager(
@@ -110,7 +109,12 @@ fun OnBoardingScreenContent(
                 .align(Alignment.TopEnd)
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            Text(text = "Skip", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = "Skip",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         Column(
@@ -130,37 +134,27 @@ fun OnBoardingScreenContent(
 
             Button(
                 onClick = {
-                    if (isLastPage) {
-                        onGetStartedClicked()
-                    } else {
-                        onNextClicked()
-                    }
+                    if (isLastPage) onGetStartedClicked() else onNextClicked()
                 },
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
+                    .fillMaxWidth(0.85f)
                     .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE65100)
-                )
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
             ) {
                 Text(
                     text = if (isLastPage) "Get Started" else "Next",
-                    fontSize = 18.sp
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
         }
     }
 }
-
-/**
- * Composable for drawing a single page of the onboarding flow.
- */
 @Composable
 fun OnBoardingPage(item: OnBoardingItem) {
-    // ... This composable is correct, no changes needed ...
-    // ... (Your Column, Image, and Surface code) ...
     Column(modifier = Modifier.fillMaxSize()) {
 
         Image(
@@ -168,15 +162,15 @@ fun OnBoardingPage(item: OnBoardingItem) {
             contentDescription = item.title,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.6f),
+                .fillMaxHeight(0.60f),
             contentScale = ContentScale.Crop
         )
 
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(),
-            color = MaterialTheme.colorScheme.surface,
+                .fillMaxHeight(1f),
+            color = DarkCard,
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
             shadowElevation = 8.dp
         ) {
@@ -185,27 +179,26 @@ fun OnBoardingPage(item: OnBoardingItem) {
                     .padding(32.dp)
                     .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Top  // start text immediately at top
             ) {
 
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp)) // small space only
 
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = Color.White,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = item.description,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
-                    color = Color.Gray
+                    color = Color(0xFFCCCCCC)
                 )
             }
         }
@@ -218,24 +211,22 @@ fun HorizontalPagerIndicator(
     currentPage: Int,
     modifier: Modifier = Modifier
 ) {
-    // ... This composable is correct, no changes needed ...
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.Center
     ) {
         repeat(pageCount) { index ->
+
             val color = if (index == currentPage)
-                MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                AccentOrange
+            else Color.Gray.copy(alpha = 0.4f)
 
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .padding(horizontal = 6.dp)    // FIXED SPACING
+                    .size(10.dp)
                     .clip(CircleShape)
                     .background(color)
-                    // Add horizontal padding to create space between dots
-                    .padding(horizontal = 4.dp)
             )
         }
     }

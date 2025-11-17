@@ -9,7 +9,7 @@ object RetrofitClient {
 
     // --- IMPORTANT: SET YOUR SERVER URL ---
     // Use this if running on the Android Emulator
-    private const val BASE_URL = "http://10.111.115.100:8000/"
+    private const val BASE_URL = "http://10.207.136.100:8000/"
 
     // Use this if running on a REAL Phone (replace with your PC's IP)
     // private const val BASE_URL = "http://192.168.1.10:8000/"

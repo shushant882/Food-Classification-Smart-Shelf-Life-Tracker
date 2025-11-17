@@ -51,7 +51,9 @@ data class FoodItem(
 )
 
 // --- Composable ---
-
+fun adaptiveTextColor(color: Color): Color {
+    return if (color == Color.Black) Color.White else color
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -82,7 +84,7 @@ fun HomeScreen(navController: NavController) {
     )
 
     Scaffold(
-        containerColor = YumQuickYellowBg,
+        containerColor = Color.Black,
         topBar = { HomeTopAppBar() },
         bottomBar = {
             AppBottomNavBar(
@@ -110,12 +112,12 @@ fun HomeScreen(navController: NavController) {
                         text = "Good Morning",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = YumQuickDarkText
+                        color = Color.White
                     )
                     Text(
                         text = "Rise And Shine! It's Breakfast Time",
                         fontSize = 14.sp,
-                        color = YumQuickGrayText
+                        color = Color.White
                     )
                 }
             }
@@ -254,7 +256,7 @@ private fun CategoryItem(category: Category) {
             text = category.name,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            color = YumQuickDarkText
+            color =  Color.White
         )
     }
 }

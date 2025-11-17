@@ -1,9 +1,9 @@
 package com.example.minorfinal.ui.screens // Your package name
 
-// ... Keep all your existing imports ...
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location // <-- IMPORT THIS
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -18,6 +18,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
@@ -49,10 +50,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.minorfinal.ClassificationResult
-import com.example.minorfinal.ClassifierUiState // Import the new State
+import com.example.minorfinal.ClassifierUiState
 import com.example.minorfinal.ClassifierViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.delay
 import java.io.File
 import java.text.SimpleDateFormat
@@ -61,8 +65,6 @@ import kotlin.math.absoluteValue
 
 // --- DATA CLASSES (Your original) ---
 data class WeatherContext(val city: String, val tempC: Int, val humidity: Int)
-// This is no longer needed, as the server provides the final string
-// data class ShelfLifeData(val daysLeft: Int, val condition: String, val decayFactor: Float)
 
 // --- Color Palette (Your original) ---
 private object ClassifierColors {
@@ -88,19 +90,13 @@ fun ClassifierScreen(
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
-    // --- STATE MANAGEMENT (Simplified) ---
-    // Observe the single state object from the ViewModel
     val uiState by viewModel.uiState.collectAsState()
-
-    // We still need a local animation trigger
     var showScannerAnimation by remember { mutableStateOf(false) }
 
-    // Handle Back press to deselect item
     BackHandler(enabled = uiState.selectedFood != null) {
-        viewModel.clearSelection() // Call ViewModel to clear
+        viewModel.clearSelection()
     }
 
-    // Force animation timer (Your original logic)
     LaunchedEffect(showScannerAnimation) {
         if (showScannerAnimation) {
             delay(3000)
@@ -114,7 +110,6 @@ fun ClassifierScreen(
             if (success) {
                 tempPhotoUri?.let { uri ->
                     showScannerAnimation = true
-                    // Call the new unified ViewModel function
                     viewModel.onImageSelected(uri)
                 }
             } else {
@@ -128,7 +123,6 @@ fun ClassifierScreen(
         onResult = { uri ->
             if (uri != null) {
                 showScannerAnimation = true
-                // Call the new unified ViewModel function
                 viewModel.onImageSelected(uri)
             } else {
                 Toast.makeText(context, "No image selected", Toast.LENGTH_SHORT).show()
@@ -137,7 +131,7 @@ fun ClassifierScreen(
     )
 
     FoodClassifierScreenContent(
-        uiState = uiState, // Pass the whole state down
+        uiState = uiState,
         forceAnimationState = showScannerAnimation,
         onPickImage = {
             galleryLauncher.launch(
@@ -153,38 +147,94 @@ fun ClassifierScreen(
             }
         },
         onSelectResult = { result ->
-            // Tell the ViewModel to select the food and start the network call
             viewModel.onFoodSelected(result)
         },
         onResetSelection = {
-            viewModel.clearSelection() // Tell the ViewModel to clear
-        }
+            viewModel.clearSelection()
+        },
+        // --- PASS NEW FUNCTIONS ---
+        onStorageChange = { viewModel.onStorageChanged(it) },
+        onGetPrediction = { lat, lon -> viewModel.getPrediction(lat, lon) } // Pass the VM function
     )
 }
 
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FoodClassifierScreenContent(
-    uiState: ClassifierUiState, // Use the new state object
+    uiState: ClassifierUiState,
     forceAnimationState: Boolean,
     onPickImage: () -> Unit,
     onTakePhoto: () -> Unit,
     onSelectResult: (ClassificationResult) -> Unit,
-    onResetSelection: () -> Unit
+    onResetSelection: () -> Unit,
+    // --- RECEIVE NEW FUNCTIONS ---
+    onStorageChange: (String) -> Unit,
+    onGetPrediction: (Double, Double) -> Unit // The function from the ViewModel
 ) {
-    // Get all state from the uiState object
     val imageUri = uiState.imageUri
     val results = uiState.classificationResults
     val selectedResult = uiState.selectedFood
     val isModelLoading = uiState.isLoadingModel
     val isScanning = isModelLoading || forceAnimationState
 
-    // Define Delhi Weather Context (Your original)
-    val delhiWeather = WeatherContext("New Delhi", 34, 65)
+    val context = LocalContext.current
+
+    // --- 1. SET UP LOCATION PERMISSION AND LAUNCHER ---
+    val locationPermissionState = rememberPermissionState(
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+    val locationClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    // This function will get the location and call the ViewModel
+    val requestLocationAndPredict = {
+        // Check if permission is granted
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Request the *current* location, not the last known one
+            locationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                .addOnSuccessListener { location: Location? ->
+                    if (location != null) {
+                        onGetPrediction(location.latitude, location.longitude)
+                    } else {
+                        Toast.makeText(context, "Could not get location. Is GPS on?", Toast.LENGTH_LONG).show()
+                    }
+                }.addOnFailureListener {
+                    Toast.makeText(context, "Error getting location: ${it.message}", Toast.LENGTH_LONG).show()
+                }
+        } else {
+            // This should not happen if logic is correct, but as a fallback
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
+
+    // This launcher is called after the permission dialog
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                // Permission was just granted, now get location
+                requestLocationAndPredict()
+            } else {
+                // Permission is DENIED
+                Toast.makeText(context, "Location permission is required for this feature.", Toast.LENGTH_LONG).show()
+            }
+        }
+    )
+
+    // --- 🎨 NEW GRADIENT BRUSH 🎨 ---
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            ClassifierColors.surface, // Lighter color at the top
+            ClassifierColors.background // Darker color at the bottom
+        )
+    )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ClassifierColors.background)
+            .background(backgroundBrush) // <-- 🎨 GRADIENT APPLIED HERE 🎨
     ) {
         Column(
             modifier = Modifier
@@ -194,19 +244,26 @@ fun FoodClassifierScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // HEADER (Your original)
+            // HEADER
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Neural Vision v2.0",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = ClassifierColors.primary,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "FreshLens v2.0",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = ClassifierColors.primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp
+                    )
+                }
+
                 if (selectedResult != null) {
                     IconButton(onClick = onResetSelection) {
                         Icon(Icons.Default.Close, contentDescription = "Close", tint = ClassifierColors.textSecondary)
@@ -214,7 +271,7 @@ fun FoodClassifierScreenContent(
                 }
             }
 
-            // SCANNER / IMAGE AREA (Your original)
+            // SCANNER / IMAGE AREA
             val imageHeight by animateDpAsState(if (selectedResult != null) 250.dp else 400.dp, label = "imgH")
 
             Box(
@@ -262,7 +319,8 @@ fun FoodClassifierScreenContent(
                 }
             }
 
-            // CONTROLS (Your original)
+
+            // CONTROLS
             AnimatedVisibility(visible = selectedResult == null && !isScanning) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -301,7 +359,7 @@ fun FoodClassifierScreenContent(
                                     score = result.score,
                                     index = index,
                                     isSelected = isMeSelected,
-                                    onClick = { onSelectResult(result) } // This now calls the ViewModel
+                                    onClick = { onSelectResult(result) }
                                 )
                             }
                         }
@@ -312,46 +370,53 @@ fun FoodClassifierScreenContent(
 
         // --- BOTTOM SHEET ANIMATION ---
         AnimatedVisibility(
-            visible = selectedResult != null,
+            visible = uiState.selectedFood != null,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            // Pass the REAL data from the ViewModel state
             DetailedAnalysisPanel(
-                foodName = uiState.selectedFood?.label ?: "Error",
-                confidence = uiState.selectedFood?.score ?: 0f,
-                weather = delhiWeather,
-                shelfLifeResult = uiState.predictionResult, // The real server result
-                isLoading = uiState.isLoadingNetwork,
-                errorMessage = uiState.errorMessage
+                uiState = uiState,
+                onStorageChange = onStorageChange,
+                onPredictClick = {
+                    // --- THIS IS THE NEW LOGIC ---
+                    if (locationPermissionState.status.isGranted) {
+                        // Permission is already granted
+                        requestLocationAndPredict()
+                    } else {
+                        // Permission is not granted, launch the request
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    }
+                }
             )
         }
     }
 }
 
+// --- DETAILED ANALYSIS PANEL ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailedAnalysisPanel(
-    foodName: String,
-    confidence: Float,
-    weather: WeatherContext,
-    shelfLifeResult: String?, // This is the new REAL data
-    isLoading: Boolean,
-    errorMessage: String?
+    uiState: ClassifierUiState,
+    onStorageChange: (String) -> Unit,
+    onPredictClick: () -> Unit
 ) {
+    // Get the data from the uiState
+    val foodName = uiState.selectedFood?.label ?: "Error"
+    val confidence = uiState.selectedFood?.score ?: 0f
+    val shelfLifeResult = uiState.predictionResult
+    val isLoading = uiState.isLoadingNetwork
+    val errorMessage = uiState.errorMessage
+
     // Your local logic
     val calories = (foodName.hashCode().absoluteValue % 400) + 100
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.6f)
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .border(
-                1.dp,
-                ClassifierColors.primary.copy(alpha = 0.3f),
-                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-            ),
+            .fillMaxHeight(0.75f), // Increased height slightly
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        border = BorderStroke(1.dp, ClassifierColors.primary.copy(alpha = 0.3f)),
         colors = CardDefaults.cardColors(containerColor = ClassifierColors.background.copy(alpha = 0.95f))
     ) {
         Column(
@@ -385,126 +450,284 @@ fun DetailedAnalysisPanel(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Your CyberStatBox Row (Unchanged)
+            // --- THIS IS THE NEW INPUT FORM ---
+            // It will only show if there is NO result yet
+            AnimatedVisibility(visible = shelfLifeResult == null) {
+                Column {
+                    Text(
+                        text = "ENVIRONMENTAL FACTORS",
+                        color = ClassifierColors.textSecondary,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // --- Storage Options ---
+                    Text(
+                        text = "STORAGE CONDITION",
+                        color = ClassifierColors.textSecondary,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // A horizontal, scrollable row for the options
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()), // Makes it scroll if needed
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Loop over the options from the ViewModel
+                        uiState.storageOptions.forEach { option ->
+                            val isSelected = (uiState.storageInput == option)
+                            CyberStorageChip(
+                                text = option,
+                                isSelected = isSelected,
+                                onClick = { onStorageChange(option) } // Calls the ViewModel
+                            )
+                        }
+                    }
+                    // --- End of Storage ---
+
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // Predict Button
+                    Button(
+                        onClick = onPredictClick,
+                        enabled = !isLoading,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = CutCornerShape(topStart = 10.dp, bottomEnd = 10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ClassifierColors.primary,
+                            contentColor = ClassifierColors.background,
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = ClassifierColors.background,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("GET SHELF LIFE (USES LOCATION)", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        }
+                    }
+                }
+            }
+
+            // --- THIS IS THE RESULT SECTION ---
+            // It will only show if there IS a result
+            AnimatedVisibility(visible = shelfLifeResult != null) {
+                Column {
+                    Text(
+                        text = "ESTIMATED SHELF LIFE",
+                        color = ClassifierColors.textPrimary, // <-- Your change
+                        style = MaterialTheme.typography.labelMedium, // <-- Your change
+                        modifier = Modifier.align(Alignment.CenterHorizontally) // <-- Your change
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // --- 🎨 GRADIENT BACKGROUND ADDED HERE 🎨 ---
+                    val infiniteTransition = rememberInfiniteTransition()
+
+                    val xOffset by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 2000f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(8000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart   // 👈 Smooth continuous movement
+                        )
+                    )
+
+                    val yOffset by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 1500f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(5000, easing = EaseInOut),
+                            repeatMode = RepeatMode.Restart   // 👈 No reverse flicker
+                        )
+                    )
+
+                    val backgroundGradientBrush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF00FF6F),
+                            Color(0xFF1AFFB5), //
+                            Color(0xFF00FFC3), //
+                             Color(0xFF00E7FF), // cyan glow
+                             Color(0xFF00C4FF)
+                        ),
+                        start = Offset(xOffset, yOffset),
+                        end = Offset(xOffset - 800f, yOffset - 800f)
+                    )
+
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(brush = backgroundGradientBrush) // <-- CHANGED
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        // --- 🎨 GRADIENT TEXT 🎨 ---
+                        val textGradientBrush = Brush.horizontalGradient(
+                            colors = listOf(
+                                ClassifierColors.primary,
+                                ClassifierColors.secondary
+                            )
+                        )
+
+                        Text(
+                            text = shelfLifeResult?.uppercase() ?: "",
+                            fontWeight = FontWeight.Bold,
+                            // Apply the brush to the style
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                //brush = textGradientBrush
+                            )
+                        )
+                        // --- END OF GRADIENT TEXT ---
+                    }
+                }
+            }
+
+            // Show error message if it exists
+            if (errorMessage != null && shelfLifeResult == null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = errorMessage,
+                    color = ClassifierColors.warning,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+
+            // Your original stats (Macros, etc.)
+            Spacer(modifier = Modifier.height(24.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 CyberStatBox(
                     label = "CALORIES",
-                    value = "${calories}kcal",
+                    value = "${calories} kcal/100gm", // <-- Your change
                     icon = Icons.Outlined.LocalFireDepartment,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
+
+                // --- THIS IS THE UPDATED WEATHER BOX ---
+                // Get weather from the uiState
+                val city = uiState.fetchedCity
+                val temp = uiState.fetchedTemp
+                val humidity = uiState.fetchedHumidity
+
+                // Determine text for the stat box
+                val regionLabel = if (city != null) "REGION: ${city.uppercase()}" else "LOCATION"
+                val regionValue = if (temp != null && humidity != null) {
+                    "${"%.1f".format(temp)}°C / $humidity%"
+                } else if (uiState.isLoadingNetwork) {
+                    "Fetching..."
+                } else {
+                    "Pending..." // Before button is pressed
+                }
+
                 CyberStatBox(
-                    label = "REGION: ${weather.city.uppercase()}",
-                    value = "${weather.tempC}°C / ${weather.humidity}%",
+                    label = regionLabel,
+                    value = regionValue,
                     icon = Icons.Outlined.Public,
                     modifier = Modifier.weight(1f),
-                    isWarning = weather.tempC > 30
+                    isWarning = temp?.let { it > 30 } ?: false
                 )
             }
-
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "ESTIMATED SHELF LIFE",
-                color = ClassifierColors.textSecondary,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // --- NEW: Shelf Life Result Box ---
-            // This Box now shows the result from the server
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp) // Taller to fit text
-                    .clip(CutCornerShape(bottomEnd = 10.dp))
-                    .background(ClassifierColors.surfaceHighlight)
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                when {
-                    isLoading -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = ClassifierColors.primary,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                "Requesting data from server...",
-                                color = ClassifierColors.primary,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
-                    }
-                    errorMessage != null -> {
-                        Text(
-                            text = errorMessage,
-                            color = ClassifierColors.warning,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                    shelfLifeResult != null -> {
-                        Text(
-                            text = shelfLifeResult.uppercase(), // "10 HOURS 5 MINUTES"
-                            color = ClassifierColors.textPrimary,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
+            // --- UPDATED INFO TEXT ---
+            val temp = uiState.fetchedTemp
+            val infoText = if (temp != null) {
+                "Calculation based on real-time ambient temperature (${"%.1f".format(temp)}°C)."
+            } else {
+                "Calculation will be based on real-time ambient temperature."
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            // Your original text (Unchanged)
             Text(
-                text = "Calculation based on Delhi ambient temperature (${weather.tempC}°C). High heat accelerates decay by 40%.",
+                text = infoText,
                 color = ClassifierColors.textSecondary,
                 style = MaterialTheme.typography.bodySmall,
-                fontSize = 10.sp,
+                fontSize = 13.sp, // <-- Your change
                 lineHeight = 12.sp
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Your Macro Rows (Unchanged)
+            // --- NEW MACRO SECTION ---
             val appearAnim = remember { Animatable(0f) }
             LaunchedEffect(foodName) {
                 appearAnim.animateTo(1f, tween(1000, easing = FastOutSlowInEasing))
             }
-            MacroRow(label = "PROTEIN", color = ClassifierColors.secondary, progress = 0.7f * appearAnim.value)
-            MacroRow(label = "CARBS", color = Color(0xFF00CCFF), progress = 0.5f * appearAnim.value)
-            MacroRow(label = "FATS", color = Color(0xFFFFAA00), progress = 0.3f * appearAnim.value)
+
+            // New Row for the circular indicators
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Top
+            ) {
+                MacroCircularIndicator(
+                    label = "PROTEIN",
+                    color = ClassifierColors.secondary,
+                    progress = 0.7f * appearAnim.value, // Example value
+                    modifier = Modifier.weight(1f)
+                )
+                MacroCircularIndicator(
+                    label = "CARBS",
+                    color = Color(0xFF00CCFF),
+                    progress = 0.5f * appearAnim.value, // Example value
+                    modifier = Modifier.weight(1f)
+                )
+                MacroCircularIndicator(
+                    label = "FATS",
+                    color = Color(0xFFFFAA00),
+                    progress = 0.3f * appearAnim.value, // Example value
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            // --- END OF NEW MACRO SECTION ---
         }
     }
 }
 
-// --- All your other Composables ---
-// (CyberStatBox, ResultRow, MacroRow, CyberButton, AdvancedCyberpunkScanner)
-// ... Keep them exactly as they were ...
-// ...
-// (Helper & Logic Functions)
-// ---
-// We DON'T need calculateShelfLife anymore, as the server does it.
-// You can delete this function:
-/*
-fun calculateShelfLife(food: String, temp: Int, humidity: Int): ShelfLifeData {
-    ...
+// --- ADD THIS NEW COMPOSABLE ---
+@Composable
+fun CyberStorageChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val activeColor = ClassifierColors.primary
+    val inactiveColor = ClassifierColors.border
+
+    // Determine colors based on selection
+    val bgColor = if (isSelected) activeColor.copy(alpha = 0.1f) else Color.Transparent
+    val textColor = if (isSelected) activeColor else ClassifierColors.textSecondary
+    val borderColor = if (isSelected) activeColor else inactiveColor
+
+    Box(
+        modifier = Modifier
+            .clip(CutCornerShape(topStart = 6.dp, bottomEnd = 6.dp))
+            .border(1.dp, borderColor, CutCornerShape(topStart = 6.dp, bottomEnd = 6.dp))
+            .background(bgColor)
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 10.dp) // Made it taller
+    ) {
+        Text(
+            text = text.uppercase(), // Make it match your style
+            color = textColor,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
 }
-*/
 
-// Keep your other helper functions
-// fun Context.hasCameraPermission(): Boolean { ... }
-// fun Context.createTempImageUri(): Uri { ... }
-
-// --- (Make sure to copy all your original composables and helpers below this line) ---
+// --- ALL YOUR ORIGINAL COMPOSABLES ---
 
 @Composable
 fun CyberStatBox(
@@ -578,7 +801,7 @@ fun ResultRow(
                 letterSpacing = 1.sp
             )
             Text(
-                text = if(isSelected) "ANALYZING DETAILS..." else "TAP TO SELECT",
+                text = if(isSelected) "ENTER DETAILS..." else "TAP TO SELECT", // Changed text
                 color = if(isSelected) ClassifierColors.primary else ClassifierColors.textSecondary,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -592,29 +815,49 @@ fun ResultRow(
     }
 }
 
+// --- THIS IS THE NEW MACRO COMPOSABLE ---
 @Composable
-fun MacroRow(label: String, color: Color, progress: Float) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+fun MacroCircularIndicator(
+    label: String,
+    color: Color,
+    progress: Float,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
+        Box(contentAlignment = Alignment.Center) {
+            // Background track
+            CircularProgressIndicator(
+                progress = { 1f }, // Full circle
+                modifier = Modifier.size(70.dp),
+                color = ClassifierColors.surfaceHighlight,
+                strokeWidth = 6.dp,
+            )
+            // Foreground progress
+            CircularProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.size(70.dp),
+                color = color,
+                strokeWidth = 6.dp,
+                strokeCap = StrokeCap.Round // Makes the line end rounded
+            )
+            // Text inside
+            Text(
+                text = "${(progress * 100).toInt()}", // Removed % to fit
+                color = ClassifierColors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+        Spacer(Modifier.height(8.dp))
         Text(
             text = label,
-            color = ClassifierColors.textPrimary,
-            modifier = Modifier.width(60.dp),
+            color = ClassifierColors.textSecondary,
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodySmall
-        )
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .weight(1f)
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            color = color,
-            trackColor = ClassifierColors.surfaceHighlight
+            style = MaterialTheme.typography.labelMedium
         )
     }
 }
@@ -626,7 +869,7 @@ fun CyberButton(text: String, onClick: () -> Unit, enabled: Boolean) {
     Button(
         onClick = onClick,
         enabled = enabled,
-        shape = CutCornerShape(topStart = 10.dp, bottomEnd = 10.dp),
+        shape = CutCornerShape( 10.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = activeColor.copy(alpha = 0.1f),
             contentColor = activeColor,
@@ -643,10 +886,6 @@ fun CyberButton(text: String, onClick: () -> Unit, enabled: Boolean) {
 fun AdvancedCyberpunkScanner(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "hud_anim")
 
-    val radarRotate by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)), label = "radar"
-    )
     val scanY by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
@@ -720,7 +959,7 @@ fun AdvancedCyberpunkScanner(modifier: Modifier = Modifier) {
     }
 }
 
-
+// --- (Keep your original helper functions) ---
 fun Context.hasCameraPermission(): Boolean {
     return ContextCompat.checkSelfPermission(
         this,

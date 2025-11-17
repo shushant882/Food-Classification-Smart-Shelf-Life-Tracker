@@ -51,16 +51,10 @@ fun WelcomeScreen(
             contentScale = ContentScale.Fit
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "YUMQUICK",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
+
         Spacer(modifier = Modifier.height(10.dp))
         Text(
-            text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod.",
+            text = "SmartBite's unique Dynamic Freshness Engine uses your phone's live location to fetch real-time temperature and humidity. It then runs a machine learning model to predict a true shelf life based on your specific environment.",
             color = Color.White.copy(alpha = 0.8f),
             fontSize = 14.sp,
             textAlign = TextAlign.Center,

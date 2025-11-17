@@ -90,7 +90,7 @@ dependencies {
 
     // OkHttp logging (helps with debugging network calls)
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-
+    implementation("com.google.android.gms:play-services-location:21.2.0")
     // ViewModel for Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
 

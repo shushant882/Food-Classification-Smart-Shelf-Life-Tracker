@@ -34,7 +34,6 @@ import com.example.minorfinal.ui.theme.YumQuickOrange
 import com.example.minorfinal.ui.theme.YumQuickOrangeLight
 import com.example.minorfinal.ui.theme.YumQuickWhite
 import com.example.minorfinal.ui.theme.YumQuickYellowBg
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(
@@ -43,10 +42,10 @@ fun SignupScreen(
     onLoginClick: () -> Unit
 ) {
     var fullName by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var mobile by rememberSaveable { mutableStateOf("") }
     var dob by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -54,11 +53,9 @@ fun SignupScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "New Account",
+                        text = "Sign Up",
                         fontWeight = FontWeight.Bold,
-                        color = YumQuickDarkText,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
+                        color = Color.White
                     )
                 },
                 navigationIcon = {
@@ -66,16 +63,16 @@ fun SignupScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = YumQuickDarkText
+                            tint = Color.White
                         )
                     }
                 },
-                actions = { Spacer(modifier = Modifier.width(48.dp)) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = YumQuickYellowBg)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
             )
         },
-        containerColor = YumQuickYellowBg
+        containerColor = Color.Black
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -84,28 +81,69 @@ fun SignupScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(),
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                colors = CardDefaults.cardColors(containerColor = YumQuickWhite),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Text(
+                        text = "Create Your Account",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Full Name
                     AuthTextField(
                         value = fullName,
                         onValueChange = { fullName = it },
-                        label = "Full name",
+                        label = "Full Name",
                         keyboardType = KeyboardType.Text
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    // Email
+                    AuthTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = "Email",
+                        keyboardType = KeyboardType.Email
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Mobile Number
+                    AuthTextField(
+                        value = mobile,
+                        onValueChange = { mobile = it },
+                        label = "Mobile Number",
+                        keyboardType = KeyboardType.Phone
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // DOB
+                    AuthTextField(
+                        value = dob,
+                        onValueChange = { dob = it },
+                        label = "Date of Birth",
+                        keyboardType = KeyboardType.Text
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Password
                     AuthTextField(
                         value = password,
                         onValueChange = { password = it },
@@ -115,37 +153,12 @@ fun SignupScreen(
                         passwordVisible = passwordVisible,
                         onPasswordToggleClick = { passwordVisible = !passwordVisible }
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    AuthTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = "Email",
-                        keyboardType = KeyboardType.Email
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    AuthTextField(
-                        value = mobile,
-                        onValueChange = { mobile = it },
-                        label = "Mobile Number",
-                        keyboardType = KeyboardType.Phone
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    AuthTextField(
-                        value = dob,
-                        onValueChange = { dob = it },
-                        label = "Date of birth",
-                        keyboardType = KeyboardType.Text
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "By continuing, you agree to Terms of Use and Privacy Policy.",
-                        color = YumQuickGrayText,
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Sign Up Button
                     Button(
-                        onClick = onSignupClick, // Connected to NavHost
+                        onClick = onSignupClick,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -159,18 +172,19 @@ fun SignupScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    // ... Social login icons ...
-                    Spacer(modifier = Modifier.height(24.dp))
+
                     Row {
-                        Text("Already have an account? ", color = YumQuickGrayText)
+                        Text("Already have an account? ", color = Color.Gray)
                         Text(
-                            text = "Log in",
+                            text = "Log In",
                             color = YumQuickOrangeLight,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable(onClick = onLoginClick) // Connected to NavHost
+                            modifier = Modifier.clickable(onClick = onLoginClick)
                         )
                     }
+
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
