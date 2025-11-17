@@ -82,6 +82,17 @@ dependencies {
 
     // 4. Material Icons
     implementation("androidx.compose.material:material-icons-extended:1.7.0-alpha06")
+    // Retrofit for networking
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+
+    // Gson converter for parsing JSON
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // OkHttp logging (helps with debugging network calls)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // ViewModel for Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.7.0")
