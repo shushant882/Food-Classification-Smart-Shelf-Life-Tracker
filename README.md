@@ -76,5 +76,7 @@ Please read our CONTRIBUTING.md file (you'll need to create this) for more detai
 📄 License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+![h](https://github.com/user-attachments/assets/30bdfaa3-62e7-4e98-ae16-b94a189fb297)
+![WhatsApp Image 2025-11-17 at 23 12 10_68669783](https://github.com/user-attachments/assets/0e63f355-9a3a-4ba4-a224-6d3a4887bebb)
 
 This app is intended to provide estimations and tips. Always use your best judgment to check for food spoilage.
