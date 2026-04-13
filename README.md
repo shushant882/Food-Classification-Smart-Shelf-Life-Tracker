@@ -1,82 +1,169 @@
-FreshCheck: Food & Shelf Life Predictor 🍏
+<h1 align="center">🍏 FreshCheck</h1>
 
-FreshCheck is a smart Android application designed to help you reduce food waste and manage your pantry more effectively. By simply taking a picture, our advanced machine-learning model identifies your food item and provides an estimated shelf life, along with helpful storage tips.
+<p align="center">
+  <b>Smart Food Recognition & Shelf-Life Predictor</b><br>
+  <em>Reduce food waste with AI-powered insights — fully offline 🚀</em>
+</p>
 
-✨ Features
+<p align="center">
+  <img src="https://img.shields.io/badge/Kotlin-1.9.0-B125EA?style=for-the-badge&logo=kotlin&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4?style=for-the-badge&logo=android&logoColor=white"/>
+  <img src="https://img.shields.io/badge/TensorFlow%20Lite-AI-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Android%20Studio-IDE-3DDC84?style=for-the-badge&logo=android-studio&logoColor=white"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge"/>
+</p>
 
-📸 Instant Food Recognition: Snap a photo of a fruit, vegetable, or other food item, and our AI will identify it in seconds.
+<p align="center">
+  <a href="https://github.com/shushant882/freshcheck-android/stargazers">⭐ Star</a> •
+  <a href="https://github.com/shushant882/freshcheck-android/issues">🐛 Issues</a> •
+  <a href="https://github.com/shushant882/freshcheck-android/pulls">🤝 Contribute</a>
+</p>
 
-⏳ Shelf Life Estimation: Get an immediate, data-driven estimate of how long your food will stay fresh.
+---
 
-💡 Smart Storage Tips: Learn the best way to store each item (e.g., "Keep in a cool, dark place" or "Refrigerate in an airtight container") to maximize its freshness.
+## 📱 App Preview
 
-🔔 Expiry Reminders (Coming Soon): Set reminders for your food items and get notifications before they are about to expire.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/30bdfaa3-62e7-4e98-ae16-b94a189fb297" width="260"/>
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/0e63f355-9a3a-4ba4-a224-6d3a4887bebb" width="260"/>
+</p>
 
-🥦 Food Log (Coming Soon): Keep a digital inventory of your pantry and fridge.
+---
 
-🚀 How It Works
+## 🌟 Features
 
-Snap: Open the app and tap the camera icon.
+✨ **AI Food Recognition**  
+📸 Detect fruits, vegetables, and pantry items instantly using on-device ML  
 
-Identify: Center your food item and take a clear picture.
+⏳ **Shelf-Life Prediction**  
+Get estimated freshness duration based on food type  
 
-Learn: Our AI model analyzes the image and identifies the food.
+📦 **Smart Storage Tips**  
+Learn best practices to maximize food life  
 
-Manage: Instantly receive a report detailing the food's name, estimated shelf life, and optimal storage conditions.
+🔔 **Expiry Alerts (Coming Soon)**  
+Stay notified before food spoils  
 
-🛠️ Technology Stack
+🥗 **Inventory Management (Coming Soon)**  
+Track your fridge & pantry efficiently  
 
-This project is built with modern Android development tools:
+---
 
-Language: Kotlin
+## ⚙️ How It Works
 
-UI: Jetpack Compose
+```mermaid
+flowchart LR
+A[📸 Capture Image] --> B[🧠 ML Model Inference]
+B --> C[📊 Shelf-Life Analysis]
+C --> D[📱 Display Results]
+```
 
-Machine Learning: TensorFlow Lite for on-device food recognition.
+1. Capture food image  
+2. ML model classifies item  
+3. App fetches shelf-life data  
+4. UI shows actionable insights  
 
-Database: Room for storing user data (like reminders or food logs).
+---
 
-Architecture: MVVM (Model-View-ViewModel)
+## 🧠 AI + Android Deep Dive
 
-📦 Installation
+### 🤖 Machine Learning
+- TensorFlow Lite model (`.tflite`)
+- Trained on thousands of labeled food images
+- Outputs probability-based classification
 
-To build and run this project locally, follow these steps:
+### 📱 Android Engine
+- CameraX for image capture  
+- Preprocessing (resize, normalize, rotate)  
+- MVVM architecture for state handling  
+- Jetpack Compose for reactive UI  
 
-Clone the repository:
+### ⚡ Edge AI Advantages
+- 🚀 Zero latency  
+- 🌐 Works offline  
+- 🔒 Full privacy (no cloud upload)  
 
-git clone [https://github.com/your-username/freshcheck-android.git](https://github.com/your-username/freshcheck-android.git)
+---
 
+## 🛠 Tech Stack
 
-Open in Android Studio:
+| Layer | Technology |
+|------|-----------|
+| Language | Kotlin 🟣 |
+| UI | Jetpack Compose 🎨 |
+| ML | TensorFlow Lite 🤖 |
+| Database | Room 🗄️ |
+| Architecture | MVVM 🏗️ |
 
-Open Android Studio (version Bumblebee or newer recommended).
+---
 
-Select "Open an Existing Project".
+## 🏗 Architecture
 
-Navigate to the cloned repository directory and open it.
+```
+UI (Compose)
+   ↓
+ViewModel
+   ↓
+Repository
+   ↓
+Room DB + ML Model
+```
 
-Build:
+✔ Clean separation of concerns  
+✔ Scalable & testable design  
 
-Let Android Studio sync the Gradle files.
+---
 
-Click the "Run" button to build and install the app on an emulator or a connected Android device.
+## 🚀 Getting Started
 
-🤝 Contributing
+### 1️⃣ Clone Repository
+```bash
+git clone https://github.com/shushant882/freshcheck-android.git
+```
 
-Contributions are welcome! If you'd like to help improve FreshCheck, please feel free to:
+### 2️⃣ Open in Android Studio
+- Use **Bumblebee or newer**
+- Select **Open Existing Project**
 
-Report a bug by opening an issue.
+### 3️⃣ Run the App
+- Sync Gradle  
+- Click ▶ Run  
 
-Suggest a new feature.
+---
 
-Submit a pull request with your improvements.
+## 🤝 Contributing
 
-Please read our CONTRIBUTING.md file (you'll need to create this) for more details on our code of conduct and the process for submitting pull requests.
+We ❤️ contributions!
 
-📄 License
+```bash
+# Fork repo
+git checkout -b feature/your-feature
+git commit -m "Add feature"
+git push origin feature/your-feature
+```
 
-This project is licensed under the MIT License. See the LICENSE file for details.
-![h](https://github.com/user-attachments/assets/30bdfaa3-62e7-4e98-ae16-b94a189fb297)
-![WhatsApp Image 2025-11-17 at 23 12 10_68669783](https://github.com/user-attachments/assets/0e63f355-9a3a-4ba4-a224-6d3a4887bebb)
+Then create a Pull Request 🚀
 
-This app is intended to provide estimations and tips. Always use your best judgment to check for food spoilage.
+---
+
+## 📄 License
+
+Licensed under the **MIT License**
+
+---
+
+## ⚠️ Disclaimer
+
+<p align="center">
+  <em>
+    FreshCheck provides predictive estimates only.<br>
+    Always verify food safety manually before consumption.
+  </em>
+</p>
+
+---
+
+<p align="center">
+  ⭐ If you like this project, don't forget to star it!
+</p>
